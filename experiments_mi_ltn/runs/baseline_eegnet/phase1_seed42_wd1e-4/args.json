@@ -1,0 +1,19 @@
+{
+  "data_root": "/home/diani2409/tfm/torcheeg/data/BCICIV_2a_mat",
+  "epochs": 30,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "val_ratio": 0.2,
+  "num_workers": 0,
+  "seed": 42,
+  "device": "auto",
+  "limit_samples": null,
+  "run_root": "/home/diani2409/tfm/torcheeg/experiments_mi_ltn/runs/baseline_eegnet",
+  "run_id": "phase1_seed42_wd1e-4",
+  "checkpoint": null,
+  "scheduler": "none",
+  "plateau_factor": 0.5,
+  "plateau_patience": 5,
+  "early_stopping_patience": 0
+}

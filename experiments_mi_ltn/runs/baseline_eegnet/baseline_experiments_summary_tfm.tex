@@ -1,0 +1,13 @@
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrlrrllrrr}
+\hline
+Config. & Seed & Ep. & Optimizador & LR & BS & WD & Scheduler & Early stopping & Best val. acc. & Best ep. \\
+\hline
+Hist. BS32 & 42 & 30 & Adam & 0.001 & 32 & n/r & n/r & n/r & 0.7210 & 22 \\
+Default BS64 & 42 & 30 & Adam & 0.001 & 64 & 0 & none & no & 0.7104 & 30 \\
+Plateau BS64 & 42 & 30 & Adam & 0.001 & 64 & 0 & plateau & no & 0.7104 & 30 \\
+WD 1e-4 & 42 & 15 & Adam & 0.001 & 64 & 1e-4 & none & no & 0.6766 & 15 \\
+Timing/debug & 42 & 1 & Adam & 0.001 & 64 & 0 & none & no & 0.4122 & 1 \\
+\hline
+\end{tabular}

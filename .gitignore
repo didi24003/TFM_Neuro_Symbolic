@@ -1,60 +1,67 @@
-# Compiled python
+# Python
+__pycache__/
+*/__pycache__/
 *.pyc
+*.pyo
 *.pyd
 
 # Compiled MATLAB
 *.mex*
-
-# IPython notebook checkpoints
-.ipynb_checkpoints
-
-# Editor temporaries
-*.swn
-*.swo
-*.swp
-*~
-
-# Sublime Text settings
-*.sublime-workspace
-*.sublime-project
-
-# Eclipse Project settings
-*.*project
-.settings
-
-# QtCreator files
-*.user
-
-# PyCharm files
-.idea
-
-# Visual Studio Code files
-.vscode
-.vs
-
-# OSX dir files
-.DS_Store
-
-# Outputs
-*/__pycache__
 .pytest_cache/
-build/
-dist/
-.cache/
-.eggs/
-lightning_logs/
-*.egg-info/
 .coverage
 .coverage.*
 coverage.xml
-*.out
-*.pt
-docs/source/generated
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Notebooks and editors
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.swn
+*~
+.idea/
+.vscode/
+.vs/
+
+# Build/install artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+.cache/
+docs/source/generated/
 docs/source/auto_examples/
 
-# Local experimental folders
+# Dataset: keep BCI Competition IV 2a outside GitHub by default.
+data/
+
+# TorchEEG generated caches
+experiments_mi_ltn/io/
+io/
+.torcheeg/
 tmp_in/
 tmp_out/
-dev/
-.torcheeg/
-lightning_logs/
+experiments_mi_ltn/runs/.matplotlib/
+
+# Heavy model artifacts and checkpoints
+*.pt
+*.pth
+*.ckpt
+experiments_mi_ltn/runs/**/checkpoints/
+
+# Logs and compressed archives
+*.log
+*.zip
+*.tar.gz
+*.rar
+*.out
+
+# Keep lightweight experiment metadata/figures trackable.
+# Do not ignore experiments_mi_ltn/runs/ globally: CSV, JSON, TeX and final
+# lightweight figures are useful for the TFM record.

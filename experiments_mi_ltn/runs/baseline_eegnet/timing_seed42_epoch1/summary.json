@@ -1,0 +1,18 @@
+{
+  "model": "EEGNet",
+  "block": "baseline_eegnet",
+  "seed": 42,
+  "epochs_requested": 1,
+  "epochs_completed": 1,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "scheduler": "none",
+  "early_stopping_patience": 0,
+  "best_val_acc": 0.41216216216216217,
+  "best_epoch": 1,
+  "checkpoint_path": "/home/diani2409/tfm/torcheeg/experiments_mi_ltn/runs/baseline_eegnet/timing_seed42_epoch1/checkpoint_best.pt",
+  "history_csv": "/home/diani2409/tfm/torcheeg/experiments_mi_ltn/runs/baseline_eegnet/timing_seed42_epoch1/history.csv",
+  "run_dir": "/home/diani2409/tfm/torcheeg/experiments_mi_ltn/runs/baseline_eegnet/timing_seed42_epoch1",
+  "stopped_early": false
+}
