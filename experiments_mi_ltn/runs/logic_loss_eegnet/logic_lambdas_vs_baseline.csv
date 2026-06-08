@@ -1,0 +1,8 @@
+baseline_run_id,baseline_best_val_acc,run_id,lambda_logic,logic_best_val_acc,absolute_difference,is_best_lambda,best_epoch,final_val_acc,status,notes
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p001_seed2024_lr5e-4_ep300_es50,0.001,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p01_seed2024_lr5e-4_ep300_es50,0.01,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p05_seed2024_lr5e-4_ep300_es50,0.05,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p1_seed2024_lr5e-4_ep300_es50,0.1,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p2_seed2024_lr5e-4_ep300_es50,0.2,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p5_seed2024_lr5e-4_ep300_es50,0.5,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam1p0_seed2024_lr5e-4_ep300_es50,1.0,,,,,,pending,logic-loss result pending
