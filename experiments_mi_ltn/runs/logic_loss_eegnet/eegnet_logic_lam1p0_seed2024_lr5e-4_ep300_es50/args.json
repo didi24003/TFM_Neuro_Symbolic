@@ -1,0 +1,22 @@
+{
+  "data_root": "data/BCICIV_2a_mat",
+  "epochs": 300,
+  "batch_size": 64,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0,
+  "lambda_logic": 1.0,
+  "baseline_checkpoint": "experiments_mi_ltn/runs/baseline_eegnet/eegnet_best_lr5e-4_seed2024_ep300_es50/checkpoint_best.pt",
+  "checkpoint": null,
+  "val_ratio": 0.2,
+  "num_workers": 0,
+  "seed": 2024,
+  "device": "auto",
+  "limit_samples": null,
+  "run_root": "experiments_mi_ltn/runs/logic_loss_eegnet",
+  "run_id": "eegnet_logic_lam1p0_seed2024_lr5e-4_ep300_es50",
+  "scheduler": "none",
+  "plateau_factor": 0.5,
+  "plateau_patience": 5,
+  "early_stopping_patience": 50,
+  "checkpoint_every": 10
+}

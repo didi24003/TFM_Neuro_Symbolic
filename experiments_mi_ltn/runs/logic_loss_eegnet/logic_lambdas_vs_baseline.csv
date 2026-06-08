@@ -1,8 +1,8 @@
 baseline_run_id,baseline_best_val_acc,run_id,lambda_logic,logic_best_val_acc,absolute_difference,is_best_lambda,best_epoch,final_val_acc,status,notes
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p001_seed2024_lr5e-4_ep300_es50,0.001,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p01_seed2024_lr5e-4_ep300_es50,0.01,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p05_seed2024_lr5e-4_ep300_es50,0.05,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p1_seed2024_lr5e-4_ep300_es50,0.1,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p2_seed2024_lr5e-4_ep300_es50,0.2,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p5_seed2024_lr5e-4_ep300_es50,0.5,,,,,,pending,logic-loss result pending
-eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam1p0_seed2024_lr5e-4_ep300_es50,1.0,,,,,,pending,logic-loss result pending
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p001_seed2024_lr5e-4_ep300_es50,0.001,0.7693050193050193,-0.0038610038610038533,,141,0.7664092664092664,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p01_seed2024_lr5e-4_ep300_es50,0.01,0.7731660231660231,0.0,,202,0.7615830115830116,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p05_seed2024_lr5e-4_ep300_es50,0.05,0.7741312741312741,0.0009652509652510188,,171,0.7693050193050193,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p1_seed2024_lr5e-4_ep300_es50,0.1,0.7799227799227799,0.006756756756756799,,191,0.7731660231660231,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p2_seed2024_lr5e-4_ep300_es50,0.2,0.778957528957529,0.005791505791505891,,177,0.7606177606177607,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam0p5_seed2024_lr5e-4_ep300_es50,0.5,0.7808880308880309,0.007722007722007818,,171,0.7808880308880309,early_stopped,
+eegnet_best_lr5e-4_seed2024_ep300_es50,0.7731660231660231,eegnet_logic_lam1p0_seed2024_lr5e-4_ep300_es50,1.0,0.7924710424710425,0.019305019305019377,yes,218,0.7828185328185329,early_stopped,

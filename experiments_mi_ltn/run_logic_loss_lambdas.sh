@@ -38,7 +38,8 @@ log() {
     printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${msg}" | tee -a "${LOG_PATH}"
 }
 
-if [[ ! -f "pyproject.toml" ]] || [[ ! -d "experiments_mi_ltn" ]]; then
+#if [[ ! -f "pyproject.toml" ]] || [[ ! -d "experiments_mi_ltn" ]]; then
+if [[ ! -d "experiments_mi_ltn" ]]; then
     echo "ERROR: ejecuta este script desde la raiz del repositorio TorchEEG."
     exit 1
 fi
