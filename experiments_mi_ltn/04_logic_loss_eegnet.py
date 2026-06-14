@@ -67,7 +67,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--lambda-logic", type=float, default=0.1)
-    parser.add_argument("--baseline-checkpoint", type=Path, default=RUNS_DIR / "best_eegnet_bciciv2a.pt")
+    parser.add_argument(
+        "--baseline-checkpoint",
+        type=Path,
+        default=RUNS_DIR / "best_eegnet_bciciv2a.pt",
+        help=(
+            "Reference baseline checkpoint used only to evaluate baseline_val_acc on the "
+            "same validation split. It is not used to initialize or resume logic-loss training."
+        ),
+    )
     parser.add_argument("--checkpoint", type=Path, default=None, help="Optional extra best checkpoint path.")
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--num-workers", type=int, default=0)
@@ -456,6 +464,7 @@ def main() -> None:
     else:
         print(f"baseline checkpoint not found: {args.baseline_checkpoint}")
 
+    print("logic model initialization: fresh EEGNet weights from seed, no baseline checkpoint loaded")
     model = build_model().to(device)
     ce_loss = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)

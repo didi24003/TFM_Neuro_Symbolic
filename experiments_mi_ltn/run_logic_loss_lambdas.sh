@@ -9,6 +9,8 @@ LOG_PATH="${RUN_ROOT}/logic_lambdas_run.log"
 SUMMARY_CSV="${RUN_ROOT}/logic_loss_runs_summary.csv"
 
 BASELINE_RUN_ID="eegnet_best_lr5e-4_seed2024_ep300_es50"
+# Reference only: 04_logic_loss_eegnet.py evaluates this checkpoint on the same
+# validation split for delta_vs_baseline, but trains the logic-loss EEGNet from scratch.
 BASELINE_CHECKPOINT="experiments_mi_ltn/runs/baseline_eegnet/${BASELINE_RUN_ID}/checkpoint_best.pt"
 BASELINE_BEST_VAL_ACC="0.7731660231660231"
 
@@ -62,7 +64,7 @@ mkdir -p "${RUN_ROOT}"
 
 log "Inicio de barrido EEGNet + logic loss"
 log "Baseline elegido: ${BASELINE_RUN_ID} best_val_acc=${BASELINE_BEST_VAL_ACC}"
-log "Baseline checkpoint: ${BASELINE_CHECKPOINT}"
+log "Baseline checkpoint de referencia, no inicializacion: ${BASELINE_CHECKPOINT}"
 log "Config: seed=${SEED} epochs=${EPOCHS} bs=${BATCH_SIZE} lr=${LEARNING_RATE} wd=${WEIGHT_DECAY} scheduler=${SCHEDULER} es=${EARLY_STOPPING_PATIENCE}"
 
 python - <<'PY' 2>&1 | tee -a "${LOG_PATH}"

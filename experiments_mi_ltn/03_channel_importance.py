@@ -5,9 +5,22 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from pathlib import Path
 
 import torch
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RUNS_DIR = SCRIPT_DIR / "runs"
+MPLCONFIG_DIR = RUNS_DIR / ".matplotlib"
+MPLCONFIG_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIG_DIR))
+
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
 
 from mi_ltn_common import (
     BCI_IV_2A_CHANNELS,
@@ -27,6 +40,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
     parser.add_argument("--checkpoint", type=Path, default=RUNS_DIR / "best_eegnet_bciciv2a.pt")
     parser.add_argument("--output-csv", type=Path, default=RUNS_DIR / "channel_importance.csv")
+    parser.add_argument(
+        "--output-sorted-csv",
+        type=Path,
+        default=None,
+        help="Optional CSV sorted by descending importance.",
+    )
+    parser.add_argument(
+        "--output-barplot",
+        type=Path,
+        default=None,
+        help="Optional horizontal bar plot PNG.",
+    )
+    parser.add_argument(
+        "--plot-title",
+        type=str,
+        default="EEG Channel Importance",
+    )
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--num-workers", type=int, default=0)
@@ -71,6 +101,37 @@ def load_checkpoint_state_dict(checkpoint_path: Path, device: torch.device):
     if "state_dict" in checkpoint:
         return checkpoint["state_dict"]
     return checkpoint
+
+
+def write_csv(rows: list[dict[str, object]], output_csv: Path) -> None:
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def plot_importance_barplot(
+    rows_sorted: list[dict[str, object]],
+    output_path: Path,
+    title: str,
+) -> None:
+    channel_names = [str(row["channel_name"]) for row in rows_sorted]
+    importances = [float(row["importance"]) for row in rows_sorted]
+
+    fig_height = max(6.0, len(rows_sorted) * 0.35)
+    fig, ax = plt.subplots(figsize=(11, fig_height))
+    ax.barh(channel_names, importances, color="#4c78a8")
+    ax.invert_yaxis()
+    ax.set_xlabel("Permutation importance")
+    ax.set_ylabel("Channel")
+    ax.set_title(title)
+    ax.grid(axis="x", linestyle="--", alpha=0.35)
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
 
 
 def main() -> None:
@@ -120,14 +181,20 @@ def main() -> None:
     for rank, row in enumerate(rows, start=1):
         row["rank"] = rank
 
-    args.output_csv.parent.mkdir(parents=True, exist_ok=True)
-    with args.output_csv.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    rows_standard_order = sorted(rows, key=lambda row: int(row["channel_index"]))
+
+    write_csv(rows_standard_order, args.output_csv)
+    if args.output_sorted_csv is not None:
+        write_csv(rows, args.output_sorted_csv)
+    if args.output_barplot is not None:
+        plot_importance_barplot(rows, args.output_barplot, args.plot_title)
 
     print(f"base_accuracy={base_acc:.4f}")
-    print(f"saved ranking: {args.output_csv}")
+    print(f"saved CSV: {args.output_csv}")
+    if args.output_sorted_csv is not None:
+        print(f"saved sorted CSV: {args.output_sorted_csv}")
+    if args.output_barplot is not None:
+        print(f"saved bar plot: {args.output_barplot}")
 
 
 if __name__ == "__main__":

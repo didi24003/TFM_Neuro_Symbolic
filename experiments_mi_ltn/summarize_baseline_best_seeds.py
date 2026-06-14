@@ -12,12 +12,23 @@ RUN_ROOT = Path("experiments_mi_ltn/runs/baseline_eegnet")
 OUTPUT_CSV = RUN_ROOT / "best_seeds_summary.csv"
 OUTPUT_TEX = RUN_ROOT / "best_seeds_results_table.tex"
 
-REFERENCE_RUN_ID = "eegnet_lr5e-4_seed42_ep300_es50"
 TARGET_RUN_IDS = {
-    0: "eegnet_best_lr5e-4_seed0_ep300_es50",
-    7: "eegnet_best_lr5e-4_seed7_ep300_es50",
-    123: "eegnet_best_lr5e-4_seed123_ep300_es50",
-    2024: "eegnet_best_lr5e-4_seed2024_ep300_es50",
+    0: [
+        "eegnet_best_lr5e-4_seed0_ep300_es50",
+    ],
+    7: [
+        "eegnet_best_lr5e-4_seed7_ep300_es50",
+    ],
+    42: [
+        "eegnet_best_lr5e-4_seed42_ep300_es50",
+        "eegnet_lr5e-4_seed42_ep300_es50",
+    ],
+    123: [
+        "eegnet_best_lr5e-4_seed123_ep300_es50",
+    ],
+    2024: [
+        "eegnet_best_lr5e-4_seed2024_ep300_es50",
+    ],
 }
 
 FIELDNAMES = [
@@ -60,7 +71,7 @@ def read_final_metrics(history_csv: Path) -> tuple[str, str]:
     return last.get("train_acc", ""), last.get("val_acc", "")
 
 
-def row_for_run(run_id: str, seed: int, reference: bool = False) -> dict:
+def row_for_run(run_id: str, seed: int, notes: str = "") -> dict:
     run_dir = RUN_ROOT / run_id
     summary_path = run_dir / "summary.json"
     args_path = run_dir / "args.json"
@@ -93,8 +104,6 @@ def row_for_run(run_id: str, seed: int, reference: bool = False) -> dict:
     if not history_csv.exists():
         history_csv = run_dir / "history.csv"
     final_train_acc, final_val_acc = read_final_metrics(history_csv)
-    notes = "seed 42 reference from phase 1" if reference else ""
-
     return {
         "run_id": run_id,
         "model": summary.get("model", "EEGNet"),
@@ -158,8 +167,16 @@ def write_tex(rows: list[dict]) -> None:
 
 
 def main() -> None:
-    rows = [row_for_run(REFERENCE_RUN_ID, 42, reference=True)]
-    rows.extend(row_for_run(run_id, seed) for seed, run_id in TARGET_RUN_IDS.items())
+    rows = []
+    for seed, candidate_run_ids in TARGET_RUN_IDS.items():
+        resolved_run_id = next(
+            (run_id for run_id in candidate_run_ids if (RUN_ROOT / run_id / "summary.json").exists()),
+            candidate_run_ids[0],
+        )
+        note = ""
+        if seed == 42 and resolved_run_id != candidate_run_ids[0]:
+            note = f"fallback to legacy run id: {resolved_run_id}"
+        rows.append(row_for_run(resolved_run_id, seed, notes=note))
     write_csv(rows)
     write_tex(rows)
     print(f"Wrote {OUTPUT_CSV}")

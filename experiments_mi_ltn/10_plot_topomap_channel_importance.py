@@ -107,6 +107,21 @@ def plot_topomap(df: pd.DataFrame, title: str, output_path: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--input-csv",
+        default=None,
+        help="Single channel-importance CSV to plot.",
+    )
+    parser.add_argument(
+        "--title",
+        default=None,
+        help="Title for --input-csv mode.",
+    )
+    parser.add_argument(
+        "--output-path",
+        default=None,
+        help="Output path for --input-csv mode.",
+    )
+    parser.add_argument(
         "--baseline-csv",
         default="experiments_mi_ltn/runs/channel_importance_baseline_30ep.csv",
     )
@@ -123,6 +138,19 @@ def main():
     baseline_csv = Path(args.baseline_csv)
     logic_csv = Path(args.logic_csv)
     output_dir = Path(args.output_dir)
+
+    if args.input_csv is not None:
+        if args.output_path is None:
+            raise ValueError("--output-path is required when using --input-csv")
+        single_df = load_importance(Path(args.input_csv))
+        plot_topomap(
+            single_df,
+            args.title or "Channel importance",
+            Path(args.output_path),
+        )
+        print("Saved:")
+        print(Path(args.output_path))
+        return
 
     baseline_df = load_importance(baseline_csv)
     logic_df = load_importance(logic_csv)
@@ -146,6 +174,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
