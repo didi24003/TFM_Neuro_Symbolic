@@ -1,5 +1,22 @@
+#!/usr/bin/env python
+"""Plot a topomap from a channel-importance CSV."""
+
+from __future__ import annotations
+
 import argparse
+import os
 from pathlib import Path
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RUNS_DIR = SCRIPT_DIR / "runs"
+MPLCONFIG_DIR = RUNS_DIR / ".matplotlib"
+MPLCONFIG_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIG_DIR))
+
+import matplotlib
+
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import mne
@@ -8,17 +25,48 @@ import pandas as pd
 
 BCI_IV_2A_CHANNELS = [
     "Fz",
-    "FC3", "FC1", "FCz", "FC2", "FC4",
-    "C5", "C3", "C1", "Cz", "C2", "C4", "C6",
-    "CP3", "CP1", "CPz", "CP2", "CP4",
-    "P1", "Pz", "P2", "POz",
+    "FC3",
+    "FC1",
+    "FCz",
+    "FC2",
+    "FC4",
+    "C5",
+    "C3",
+    "C1",
+    "Cz",
+    "C2",
+    "C4",
+    "C6",
+    "CP3",
+    "CP1",
+    "CPz",
+    "CP2",
+    "CP4",
+    "P1",
+    "Pz",
+    "P2",
+    "POz",
 ]
 
 SENSORIMOTOR_CHANNELS = {
-    "FC3", "FC4", "FCz",
-    "C3", "C4", "Cz",
-    "CP3", "CP4", "CPz",
+    "FC3",
+    "FC4",
+    "FCz",
+    "C3",
+    "C4",
+    "Cz",
+    "CP3",
+    "CP4",
+    "CPz",
 }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-csv", type=Path, required=True)
+    parser.add_argument("--output-path", type=Path, required=True)
+    parser.add_argument("--title", type=str, default="Channel importance")
+    return parser.parse_args()
 
 
 def load_importance(csv_path: Path) -> pd.DataFrame:
@@ -27,12 +75,13 @@ def load_importance(csv_path: Path) -> pd.DataFrame:
     required = {"channel_name", "importance"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"Missing columns in {csv_path}: {missing}")
+        raise ValueError(f"Missing columns in {csv_path}: {sorted(missing)}")
 
     df = df.copy()
     df["channel_name"] = df["channel_name"].astype(str)
+    df["importance"] = pd.to_numeric(df["importance"], errors="raise")
 
-    # Mantener solo canales del dataset BCI IV 2a y en orden estándar
+    # Keep only dataset channels and restore the canonical 2a ordering.
     df = df[df["channel_name"].isin(BCI_IV_2A_CHANNELS)]
     df["channel_name"] = pd.Categorical(
         df["channel_name"],
@@ -43,37 +92,31 @@ def load_importance(csv_path: Path) -> pd.DataFrame:
 
     if len(df) != len(BCI_IV_2A_CHANNELS):
         found = set(df["channel_name"].astype(str))
-        missing_channels = set(BCI_IV_2A_CHANNELS) - found
-        print(f"Warning: missing channels in {csv_path}: {sorted(missing_channels)}")
+        missing_channels = sorted(set(BCI_IV_2A_CHANNELS) - found)
+        print(f"Warning: missing channels in {csv_path}: {missing_channels}")
 
     return df
 
 
-def create_info(channel_names):
+def create_info(channel_names: list[str]) -> mne.Info:
     info = mne.create_info(
-        ch_names=list(channel_names),
+        ch_names=channel_names,
         sfreq=250,
         ch_types="eeg",
     )
-
-    # El montaje standard_1020 contiene posiciones estándar para electrodos EEG.
     montage = mne.channels.make_standard_montage("standard_1020")
     info.set_montage(montage, match_case=False, on_missing="ignore")
-
     return info
 
 
-def plot_topomap(df: pd.DataFrame, title: str, output_path: Path):
+def plot_topomap(df: pd.DataFrame, title: str, output_path: Path) -> None:
     channel_names = df["channel_name"].astype(str).tolist()
     values = df["importance"].to_numpy()
 
     info = create_info(channel_names)
-
-    # Resaltar canales sensorimotores esperados
     mask = df["channel_name"].astype(str).isin(SENSORIMOTOR_CHANNELS).to_numpy()
 
     fig, ax = plt.subplots(figsize=(6, 5))
-
     im, _ = mne.viz.plot_topomap(
         values,
         info,
@@ -94,7 +137,6 @@ def plot_topomap(df: pd.DataFrame, title: str, output_path: Path):
     )
 
     ax.set_title(title, fontsize=12)
-
     cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("Permutation importance")
 
@@ -104,75 +146,13 @@ def plot_topomap(df: pd.DataFrame, title: str, output_path: Path):
     plt.close(fig)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--input-csv",
-        default=None,
-        help="Single channel-importance CSV to plot.",
-    )
-    parser.add_argument(
-        "--title",
-        default=None,
-        help="Title for --input-csv mode.",
-    )
-    parser.add_argument(
-        "--output-path",
-        default=None,
-        help="Output path for --input-csv mode.",
-    )
-    parser.add_argument(
-        "--baseline-csv",
-        default="experiments_mi_ltn/runs/channel_importance_baseline_30ep.csv",
-    )
-    parser.add_argument(
-        "--logic-csv",
-        default="experiments_mi_ltn/runs/channel_importance_logic_30ep.csv",
-    )
-    parser.add_argument(
-        "--output-dir",
-        default="experiments_mi_ltn/runs",
-    )
-    args = parser.parse_args()
-
-    baseline_csv = Path(args.baseline_csv)
-    logic_csv = Path(args.logic_csv)
-    output_dir = Path(args.output_dir)
-
-    if args.input_csv is not None:
-        if args.output_path is None:
-            raise ValueError("--output-path is required when using --input-csv")
-        single_df = load_importance(Path(args.input_csv))
-        plot_topomap(
-            single_df,
-            args.title or "Channel importance",
-            Path(args.output_path),
-        )
-        print("Saved:")
-        print(Path(args.output_path))
-        return
-
-    baseline_df = load_importance(baseline_csv)
-    logic_df = load_importance(logic_csv)
-
-    plot_topomap(
-        baseline_df,
-        "EEGNet baseline - Channel importance",
-        output_dir / "topomap_channel_importance_baseline_30ep.png",
-    )
-
-    plot_topomap(
-        logic_df,
-        "EEGNet + logic loss - Channel importance",
-        output_dir / "topomap_channel_importance_logic_30ep.png",
-    )
-
+def main() -> None:
+    args = parse_args()
+    df = load_importance(args.input_csv)
+    plot_topomap(df, args.title, args.output_path)
     print("Saved:")
-    print(output_dir / "topomap_channel_importance_baseline_30ep.png")
-    print(output_dir / "topomap_channel_importance_logic_30ep.png")
+    print(args.output_path)
 
 
 if __name__ == "__main__":
     main()
-
-

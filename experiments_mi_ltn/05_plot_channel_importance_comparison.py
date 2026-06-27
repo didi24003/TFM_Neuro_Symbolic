@@ -68,8 +68,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--delta-png",
         type=Path,
-        default=RUNS_DIR / "channel_importance_delta.png",
-        help="Delta horizontal bar plot PNG to write.",
+        default=None,
+        help="Optional delta horizontal bar plot PNG to write.",
     )
     return parser.parse_args()
 
@@ -285,12 +285,14 @@ def main() -> None:
 
     write_comparison_csv(comparison, args.output_csv)
     plot_comparison(comparison, args.comparison_png)
-    plot_delta(comparison, args.delta_png)
+    if args.delta_png is not None:
+        plot_delta(comparison, args.delta_png)
     print_top_channels(comparison)
 
     print(f"\nSaved comparison CSV: {args.output_csv}")
     print(f"Saved comparison PNG: {args.comparison_png}")
-    print(f"Saved delta PNG: {args.delta_png}")
+    if args.delta_png is not None:
+        print(f"Saved delta PNG: {args.delta_png}")
 
 
 if __name__ == "__main__":

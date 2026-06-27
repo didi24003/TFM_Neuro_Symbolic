@@ -13,12 +13,15 @@ cd "${REPO_ROOT}"
 
 DATASET_DIR="data/BCICIV_2a_mat"
 BASE_OUTPUT_DIR="experiments_mi_ltn/runs/final_channel_analysis"
+ARCHIVE_DIR="experiments_mi_ltn/runs/archive"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 OUTPUT_DIR="${BASE_OUTPUT_DIR}"
+ARCHIVED_FINAL_DIR="${ARCHIVE_DIR}/final_channel_analysis_old_${TIMESTAMP}"
 
-if [[ -d "${BASE_OUTPUT_DIR}" && "${FORCE:-0}" != "1" ]]; then
-  OUTPUT_DIR="experiments_mi_ltn/runs/final_channel_analysis_${TIMESTAMP}"
-  echo "Aviso: ${BASE_OUTPUT_DIR} ya existe y FORCE!=1. Se usará ${OUTPUT_DIR}"
+if [[ -d "${BASE_OUTPUT_DIR}" ]]; then
+  mkdir -p "${ARCHIVE_DIR}"
+  mv "${BASE_OUTPUT_DIR}" "${ARCHIVED_FINAL_DIR}"
+  echo "Aviso: se archivó la salida previa en ${ARCHIVED_FINAL_DIR}"
 fi
 
 mkdir -p "${OUTPUT_DIR}"
@@ -53,75 +56,14 @@ fi
 BASELINE_RUN_DIR="experiments_mi_ltn/runs/baseline_eegnet/eegnet_best_lr5e-4_seed2024_ep300_es50"
 BASELINE_SUMMARY="${BASELINE_RUN_DIR}/summary.json"
 BASELINE_CHECKPOINT="${BASELINE_RUN_DIR}/checkpoint_best.pt"
+LOGIC_RUN_DIR="experiments_mi_ltn/runs/logic_loss_eegnet/eegnet_logic_lam1p0_seed2024_lr5e-4_ep300_es50"
+LOGIC_SUMMARY="${LOGIC_RUN_DIR}/summary.json"
+LOGIC_CHECKPOINT="${LOGIC_RUN_DIR}/checkpoint_best.pt"
 
 if [[ ! -f "${BASELINE_SUMMARY}" ]]; then
   echo "Error: falta summary.json del baseline en ${BASELINE_SUMMARY}" >&2
   exit 1
 fi
-
-LOGIC_RUN_INFO="$(python - <<'PY'
-import csv
-import json
-from pathlib import Path
-
-summary_csv = Path("experiments_mi_ltn/runs/logic_loss_eegnet/logic_lambdas_summary.csv")
-runs_csv = Path("experiments_mi_ltn/runs/logic_loss_eegnet/logic_loss_runs_summary.csv")
-
-row = None
-for candidate in (summary_csv, runs_csv):
-    if not candidate.exists():
-        continue
-    with candidate.open(newline="") as f:
-        reader = csv.DictReader(f)
-        for current in reader:
-            try:
-                lambda_logic = float(current.get("lambda_logic", "nan"))
-            except ValueError:
-                continue
-            if lambda_logic == 1.0:
-                row = current
-                break
-    if row is not None:
-        break
-
-if row is None:
-    raise SystemExit("ERROR: no se encontró lambda_logic=1.0 en logic_lambdas_summary.csv ni logic_loss_runs_summary.csv")
-
-run_dir = row.get("run_id")
-if not run_dir:
-    checkpoint_path = row.get("checkpoint_best_path")
-    if not checkpoint_path:
-        raise SystemExit("ERROR: la fila de lambda_logic=1.0 no contiene run_id ni checkpoint_best_path")
-    run_dir = str(Path(checkpoint_path).parent)
-else:
-    run_dir = str(Path("experiments_mi_ltn/runs/logic_loss_eegnet") / run_dir)
-
-summary_path = row.get("summary_json") or str(Path(run_dir) / "summary.json")
-checkpoint_path = row.get("checkpoint_best_path") or str(Path(run_dir) / "checkpoint_best.pt")
-
-print(json.dumps({
-    "run_dir": run_dir,
-    "summary_json": summary_path,
-    "checkpoint_best_path": checkpoint_path,
-}))
-PY
-)"
-
-LOGIC_RUN_DIR="$(python - <<'PY' "${LOGIC_RUN_INFO}"
-import json, sys
-print(json.loads(sys.argv[1])["run_dir"])
-PY
-)"
-LOGIC_SUMMARY="$(python - <<'PY' "${LOGIC_RUN_INFO}"
-import json, sys
-print(json.loads(sys.argv[1])["summary_json"])
-PY
-)"
-LOGIC_CHECKPOINT="$(python - <<'PY' "${LOGIC_RUN_INFO}"
-import json, sys
-print(json.loads(sys.argv[1])["checkpoint_best_path"])
-PY
-)"
 
 echo "Baseline run dir: ${BASELINE_RUN_DIR}"
 echo "Logic run dir: ${LOGIC_RUN_DIR}"
@@ -183,8 +125,7 @@ python experiments_mi_ltn/05_plot_channel_importance_comparison.py \
   --baseline-csv "${OUTPUT_DIR}/baseline/channel_importance.csv" \
   --logic-csv "${OUTPUT_DIR}/logic_lam1p0/channel_importance.csv" \
   --output-csv "${OUTPUT_DIR}/comparison/channel_importance_comparison.csv" \
-  --comparison-png "${OUTPUT_DIR}/comparison/channel_importance_comparison.png" \
-  --delta-png "${OUTPUT_DIR}/comparison/channel_importance_delta.png"
+  --comparison-png "${OUTPUT_DIR}/comparison/channel_importance_comparison.png"
 
 echo
 echo "4-6. Delta por canal, ratios de coherencia y resumen final"

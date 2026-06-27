@@ -1,0 +1,20 @@
+{
+  "data_root": "/home/m1tus/diana/TFM_Neuro_Symbolic/data/BCICIV_2a_mat",
+  "epochs": 300,
+  "batch_size": 64,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0,
+  "val_ratio": 0.2,
+  "num_workers": 0,
+  "seed": 7,
+  "device": "auto",
+  "limit_samples": null,
+  "run_root": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/baseline_eegnet",
+  "run_id": "eegnet_best_lr5e-4_seed7_ep300_es50",
+  "checkpoint": null,
+  "scheduler": "none",
+  "plateau_factor": 0.5,
+  "plateau_patience": 5,
+  "early_stopping_patience": 50,
+  "checkpoint_every": 10
+}

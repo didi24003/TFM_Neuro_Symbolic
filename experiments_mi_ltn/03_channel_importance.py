@@ -38,7 +38,7 @@ from mi_ltn_common import (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
-    parser.add_argument("--checkpoint", type=Path, default=RUNS_DIR / "best_eegnet_bciciv2a.pt")
+    parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output-csv", type=Path, default=RUNS_DIR / "channel_importance.csv")
     parser.add_argument(
         "--output-sorted-csv",
