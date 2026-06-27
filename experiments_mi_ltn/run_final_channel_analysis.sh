@@ -157,12 +157,27 @@ python experiments_mi_ltn/10_plot_topomap_channel_importance.py \
   --output-path "${OUTPUT_DIR}/logic_lam1p0/topomap_channel_importance.png"
 
 echo
+echo "9. Importancia por canal y por clase"
+python experiments_mi_ltn/12_channel_importance_by_class_final.py \
+  --data-root "${DATASET_DIR}" \
+  --baseline-checkpoint "${BASELINE_CHECKPOINT}" \
+  --logic-checkpoint "${LOGIC_CHECKPOINT}" \
+  --baseline-output-csv "${OUTPUT_DIR}/baseline/channel_importance_by_class.csv" \
+  --logic-output-csv "${OUTPUT_DIR}/logic_lam1p0/channel_importance_by_class.csv" \
+  --comparison-output-csv "${OUTPUT_DIR}/comparison/channel_importance_by_class_comparison.csv" \
+  --seed 2024 \
+  --device "${DEVICE_ARG}"
+
+echo
 echo "Archivos CSV generados:"
 echo "  ${OUTPUT_DIR}/baseline/channel_importance.csv"
 echo "  ${OUTPUT_DIR}/baseline/channel_importance_sorted.csv"
+echo "  ${OUTPUT_DIR}/baseline/channel_importance_by_class.csv"
 echo "  ${OUTPUT_DIR}/logic_lam1p0/channel_importance.csv"
 echo "  ${OUTPUT_DIR}/logic_lam1p0/channel_importance_sorted.csv"
+echo "  ${OUTPUT_DIR}/logic_lam1p0/channel_importance_by_class.csv"
 echo "  ${OUTPUT_DIR}/comparison/channel_importance_comparison.csv"
+echo "  ${OUTPUT_DIR}/comparison/channel_importance_by_class_comparison.csv"
 echo "  ${OUTPUT_DIR}/comparison/channel_importance_delta.csv"
 echo "  ${OUTPUT_DIR}/comparison/coherence_scores.csv"
 
@@ -190,5 +205,17 @@ for _, row in df.iterrows():
         f"posterior_ratio={row['posterior_ratio']:.4f}"
     )
 PY
+
+echo
+echo "10. Figuras bonitas opcionales"
+if [[ -f "experiments_mi_ltn/run_pretty_final_channel_figures.sh" ]]; then
+  if bash experiments_mi_ltn/run_pretty_final_channel_figures.sh "${OUTPUT_DIR}"; then
+    echo "Figuras bonitas generadas correctamente."
+  else
+    echo "Aviso: falló la generación de figuras bonitas; se conservan todos los resultados previos." >&2
+  fi
+else
+  echo "Aviso: no se encontró experiments_mi_ltn/run_pretty_final_channel_figures.sh; se omite este paso."
+fi
 
 echo "Análisis final completado."
