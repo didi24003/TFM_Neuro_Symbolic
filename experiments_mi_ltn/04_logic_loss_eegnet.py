@@ -18,15 +18,17 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from mi_ltn_common import (
+    CHUNK_SIZE,
     DEFAULT_DATA_ROOT,
+    NUM_CLASSES,
+    NUM_ELECTRODES,
     RUNS_DIR,
     build_dataset,
-    build_model,
-    evaluate,
     get_device,
     make_loaders,
     seed_everything,
 )
+from model_factory import build_model as build_model_from_factory
 
 
 SUMMARY_CSV = RUNS_DIR / "logic_loss_eegnet" / "logic_loss_runs_summary.csv"
@@ -61,6 +63,7 @@ SUMMARY_FIELDNAMES = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=("eegnet", "eegnex"), default="eegnet")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=64)
@@ -97,13 +100,67 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def enrich_model_args(args: argparse.Namespace) -> argparse.Namespace:
+    args.n_chans = NUM_ELECTRODES
+    args.n_outputs = NUM_CLASSES
+    args.n_times = CHUNK_SIZE
+    args.model_kwargs = {"kernel_block_1_2": 32} if args.model == "eegnex" else {}
+    args.kernel_block_1_2 = args.model_kwargs.get("kernel_block_1_2")
+    args.model_name = "EEGNeX" if args.model == "eegnex" else "EEGNet"
+    return args
+
+
+def prepare_model_input(x: torch.Tensor, model_name: str) -> torch.Tensor:
+    if model_name == "eegnex" and x.ndim == 4 and x.shape[1] == 1:
+        return x.squeeze(1)
+    return x
+
+
+def build_experiment_model(args: argparse.Namespace) -> nn.Module:
+    return build_model_from_factory(
+        model_name=args.model,
+        n_chans=args.n_chans,
+        n_outputs=args.n_outputs,
+        n_times=args.n_times,
+        model_kwargs=args.model_kwargs,
+    )
+
+
+def evaluate_model(
+    model: nn.Module,
+    loader,
+    device: torch.device,
+    model_name: str,
+) -> tuple[float, float]:
+    criterion = nn.CrossEntropyLoss()
+    model.eval()
+    total_loss = 0.0
+    total_correct = 0
+    total_examples = 0
+    non_blocking = device.type == "cuda"
+
+    with torch.inference_mode():
+        for x, y in loader:
+            x = prepare_model_input(x.to(device, non_blocking=non_blocking), model_name)
+            y = y.long().to(device, non_blocking=non_blocking)
+            logits = model(x)
+            loss = criterion(logits, y)
+
+            batch_size = y.size(0)
+            total_loss += loss.item() * batch_size
+            total_correct += (logits.argmax(dim=1) == y).sum().item()
+            total_examples += batch_size
+
+    return total_loss / total_examples, total_correct / total_examples
+
+
 def logic_loss_from_logits(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     probs = F.softmax(logits, dim=1)
     true_probs = probs.gather(1, labels.view(-1, 1)).squeeze(1)
     return 1.0 - true_probs.mean()
 
 
-def train_one_epoch(model, loader, ce_loss, optimizer, device, lambda_logic):
+def train_one_epoch(model, loader, ce_loss, optimizer, device, lambda_logic, model_name: str):
     model.train()
     total_loss = 0.0
     total_ce = 0.0
@@ -113,7 +170,7 @@ def train_one_epoch(model, loader, ce_loss, optimizer, device, lambda_logic):
     non_blocking = device.type == "cuda"
 
     for x, y in loader:
-        x = x.to(device, non_blocking=non_blocking)
+        x = prepare_model_input(x.to(device, non_blocking=non_blocking), model_name)
         y = y.long().to(device, non_blocking=non_blocking)
 
         optimizer.zero_grad(set_to_none=True)
@@ -157,10 +214,17 @@ def load_checkpoint_state_dict(checkpoint_path: Path, device: torch.device):
 def load_baseline_accuracy(args, val_loader, device):
     if not args.baseline_checkpoint.exists():
         return None
-    model = build_model().to(device)
+    model = build_experiment_model(args).to(device)
     state_dict = load_checkpoint_state_dict(args.baseline_checkpoint, device)
-    model.load_state_dict(state_dict)
-    _, acc = evaluate(model, val_loader, device)
+    try:
+        model.load_state_dict(state_dict)
+    except RuntimeError as exc:
+        print(
+            "baseline checkpoint incompatible with selected model "
+            f"({args.model_name}): {exc}"
+        )
+        return None
+    _, acc = evaluate_model(model, val_loader, device, args.model)
     return acc
 
 
@@ -185,6 +249,10 @@ def make_run_dir(args: argparse.Namespace) -> Path:
     (run_dir / "figures").mkdir()
     (run_dir / "checkpoints").mkdir()
     return run_dir
+
+
+def summary_csv_path(args: argparse.Namespace) -> Path:
+    return args.run_root / SUMMARY_CSV.name
 
 
 def write_args(args: argparse.Namespace, run_dir: Path) -> Path:
@@ -249,7 +317,13 @@ def write_summary(
     status: str,
 ) -> None:
     summary = {
-        "model": "EEGNet",
+        "model": args.model,
+        "model_name": args.model_name,
+        "model_kwargs": args.model_kwargs,
+        "n_chans": args.n_chans,
+        "n_outputs": args.n_outputs,
+        "n_times": args.n_times,
+        "kernel_block_1_2": args.kernel_block_1_2,
         "block": "logic_loss_eegnet",
         "seed": args.seed,
         "device": str(get_device(args.device)),
@@ -345,7 +419,7 @@ def summary_row(
     final_train_acc, final_val_acc = final_metrics(history)
     return {
         "run_id": run_dir.name,
-        "model": "EEGNet",
+        "model": args.model,
         "seed": args.seed,
         "epochs": len(history),
         "optimizer": "Adam",
@@ -391,7 +465,11 @@ def upsert_summary_csv(row: dict, output_csv: Path = SUMMARY_CSV) -> None:
     shutil.move(tmp_path, output_csv)
 
 
-def plot_history(history: list[dict[str, float | int]], output_path: Path) -> None:
+def plot_history(
+    history: list[dict[str, float | int]],
+    output_path: Path,
+    model_display_name: str,
+) -> None:
     mpl_config_dir = output_path.parent.parent / ".matplotlib"
     mpl_config_dir.mkdir(exist_ok=True)
     os.environ.setdefault("MPLCONFIGDIR", str(mpl_config_dir))
@@ -410,7 +488,7 @@ def plot_history(history: list[dict[str, float | int]], output_path: Path) -> No
     axes[0].plot(epochs, [row["val_loss"] for row in history], label="validation CE")
     axes[0].set_xlabel("Epoch")
     axes[0].set_ylabel("Loss")
-    axes[0].set_title("EEGNet logic loss")
+    axes[0].set_title(f"{model_display_name} logic loss")
     axes[0].grid(alpha=0.3)
     axes[0].legend(frameon=False)
 
@@ -418,7 +496,7 @@ def plot_history(history: list[dict[str, float | int]], output_path: Path) -> No
     axes[1].plot(epochs, [row["val_acc"] for row in history], label="validation")
     axes[1].set_xlabel("Epoch")
     axes[1].set_ylabel("Accuracy")
-    axes[1].set_title("EEGNet logic accuracy")
+    axes[1].set_title(f"{model_display_name} logic accuracy")
     axes[1].grid(alpha=0.3)
     axes[1].legend(frameon=False)
 
@@ -434,7 +512,7 @@ def plot_history(history: list[dict[str, float | int]], output_path: Path) -> No
 
 
 def main() -> None:
-    args = parse_args()
+    args = enrich_model_args(parse_args())
     if not args.data_root.exists():
         raise FileNotFoundError(f"Dataset not found at {args.data_root.resolve()}")
 
@@ -464,8 +542,11 @@ def main() -> None:
     else:
         print(f"baseline checkpoint not found: {args.baseline_checkpoint}")
 
-    print("logic model initialization: fresh EEGNet weights from seed, no baseline checkpoint loaded")
-    model = build_model().to(device)
+    print(
+        "logic model initialization: fresh "
+        f"{args.model_name} weights from seed, no baseline checkpoint loaded"
+    )
+    model = build_experiment_model(args).to(device)
     ce_loss = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = None
@@ -486,9 +567,9 @@ def main() -> None:
 
     for epoch in range(1, args.epochs + 1):
         train_loss, train_ce, train_logic, train_acc = train_one_epoch(
-            model, train_loader, ce_loss, optimizer, device, args.lambda_logic
+            model, train_loader, ce_loss, optimizer, device, args.lambda_logic, args.model
         )
-        val_loss, val_acc = evaluate(model, val_loader, device)
+        val_loss, val_acc = evaluate_model(model, val_loader, device, args.model)
         lr = optimizer.param_groups[0]["lr"]
         delta = "" if baseline_acc is None else f" delta_vs_baseline={val_acc - baseline_acc:+.4f}"
         history_row = {
@@ -600,7 +681,8 @@ def main() -> None:
                 best_epoch,
                 history,
                 status,
-            )
+            ),
+            output_csv=summary_csv_path(args),
         )
 
         if (
@@ -632,7 +714,8 @@ def main() -> None:
         stopped_early,
         status,
     )
-    plot_history(history, figure_path)
+    plot_history(history, figure_path, args.model_name)
+    current_summary_csv = summary_csv_path(args)
     upsert_summary_csv(
         summary_row(
             args,
@@ -647,7 +730,8 @@ def main() -> None:
             best_epoch,
             history,
             status,
-        )
+        ),
+        output_csv=current_summary_csv,
     )
 
     print(f"best_logic_val_acc={best_val_acc:.4f}")
@@ -655,7 +739,7 @@ def main() -> None:
     print(f"run_dir={run_dir}")
     print(f"history_csv={history_path}")
     print(f"training_curves={figure_path}")
-    print(f"summary_csv={SUMMARY_CSV}")
+    print(f"summary_csv={current_summary_csv}")
 
 
 if __name__ == "__main__":
