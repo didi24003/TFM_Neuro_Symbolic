@@ -12,23 +12,31 @@ import tarfile
 from datetime import datetime
 from pathlib import Path
 
-import matplotlib
 import numpy as np
 import pandas as pd
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 RUN_ROOT = SCRIPT_DIR / "runs" / "eegnet_baseline_subject_session"
 CONFIG_RUN_ROOT = RUN_ROOT / "config_runs"
 BEST_SEEDS_RUN_ROOT = RUN_ROOT / "best_config_seeds"
 ANALYSIS_DIR = RUN_ROOT / "analysis_figures"
 EXCLUDED_RUN_PREFIXES = ("smoke_",)
+FLOAT_TOL = 1e-6
 
 MPLCONFIG_DIR = RUN_ROOT / ".matplotlib"
 MPLCONFIG_DIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIG_DIR))
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    matplotlib = None
+    plt = None
 
 
 CONFIG_SIMPLICITY_RANK = {
@@ -68,6 +76,50 @@ def sanitize_for_json(value):
     return value
 
 
+def relativize_path(value: object) -> object:
+    if value is None:
+        return None
+    path = Path(str(value))
+    if not path.is_absolute():
+        return path.as_posix()
+    for base in (REPO_ROOT, RUN_ROOT):
+        try:
+            return path.relative_to(base).as_posix()
+        except ValueError:
+            continue
+    return path.as_posix()
+
+
+def resolve_path(value: object) -> Path:
+    path = Path(str(value))
+    if path.is_absolute():
+        return path
+    repo_candidate = REPO_ROOT / path
+    if repo_candidate.exists():
+        return repo_candidate
+    return RUN_ROOT / path
+
+
+def attach_local_run_paths(summary: dict[str, object], run_dir: Path) -> dict[str, object]:
+    summary = dict(summary)
+    summary["run_dir"] = relativize_path(run_dir)
+    summary["summary_json"] = relativize_path(run_dir / "summary.json")
+    summary["subject_metrics_csv"] = relativize_path(run_dir / "subject_metrics.csv")
+    summary["args_json"] = relativize_path(run_dir / "args.json")
+    return summary
+
+
+def floats_close(left: object, right: object, tol: float = FLOAT_TOL) -> bool:
+    left_value = float(left)
+    right_value = float(right)
+    return abs(left_value - right_value) <= tol
+
+
+def serialize_record(row: pd.Series | dict[str, object]) -> dict[str, object]:
+    payload = row.to_dict() if isinstance(row, pd.Series) else dict(row)
+    return sanitize_for_json(payload)
+
+
 def candidate_run_dirs(root: Path) -> list[Path]:
     if not root.exists():
         return []
@@ -89,8 +141,7 @@ def load_run_summaries(root: Path) -> pd.DataFrame:
         with (run_dir / "summary.json").open() as f:
             summary = json.load(f)
         summary["run_id"] = run_dir.name
-        summary["run_dir"] = str(run_dir)
-        rows.append(summary)
+        rows.append(attach_local_run_paths(summary, run_dir))
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
@@ -124,7 +175,7 @@ def load_run_summaries(root: Path) -> pd.DataFrame:
 def load_subject_metrics(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, row in df.iterrows():
-        path = Path(str(row["subject_metrics_csv"]))
+        path = resolve_path(row["subject_metrics_csv"])
         if not path.exists():
             continue
         subject_df = pd.read_csv(path)
@@ -211,31 +262,102 @@ def choose_representative_run(config_runs_df: pd.DataFrame, config_name: str) ->
         ["mean_best_val_acc", "mean_best_val_kappa", "mean_final_val_acc", "run_id"],
         ascending=[False, False, False, True],
     )
-    return ordered.iloc[0].to_dict()
+    return serialize_record(ordered.iloc[0])
+
+
+def filter_tied_rows(df: pd.DataFrame, column: str, prefer_max: bool = True, tol: float = FLOAT_TOL) -> pd.DataFrame:
+    if df.empty:
+        return df
+    target = df[column].max() if prefer_max else df[column].min()
+    return df[df[column].apply(lambda value: floats_close(value, target, tol))].copy()
 
 
 def pick_best_config(config_df: pd.DataFrame, config_runs_df: pd.DataFrame) -> dict[str, object]:
     if config_df.empty:
         raise FileNotFoundError("No config runs found.")
-    ordered = config_df.sort_values(
-        ["mean_best_val_acc", "mean_best_val_kappa", "simplicity_rank", "mean_final_val_acc"],
-        ascending=[False, False, True, False],
-    )
-    selected = ordered.iloc[0].to_dict()
-    selected["representative_run"] = sanitize_for_json(choose_representative_run(config_runs_df, str(selected["config_name"])))
+
+    stage_acc = filter_tied_rows(config_df, "mean_best_val_acc", prefer_max=True)
+    stage_kappa = filter_tied_rows(stage_acc, "mean_best_val_kappa", prefer_max=True)
+    stage_final_val = filter_tied_rows(stage_kappa, "mean_final_val_acc", prefer_max=True)
+    stage_simple = filter_tied_rows(stage_final_val, "simplicity_rank", prefer_max=False)
+    ordered = stage_simple.sort_values("config_name", ascending=True).reset_index(drop=True)
+
+    selected = serialize_record(ordered.iloc[0])
+    selected["representative_run"] = choose_representative_run(config_runs_df, str(selected["config_name"]))
+
+    tie_group = stage_acc.sort_values(
+        ["mean_best_val_acc", "mean_best_val_kappa", "mean_final_val_acc", "simplicity_rank", "config_name"],
+        ascending=[False, False, False, True, True],
+    ).reset_index(drop=True)
+
+    tie_break_order = [
+        "mean_best_val_acc",
+        "mean_best_val_kappa",
+        "mean_final_val_acc",
+        "simplicity_rank",
+        "config_name",
+    ]
+    tie_break_trace = {
+        "after_mean_best_val_acc": [str(name) for name in stage_acc["config_name"].tolist()],
+        "after_mean_best_val_kappa": [str(name) for name in stage_kappa["config_name"].tolist()],
+        "after_mean_final_val_acc": [str(name) for name in stage_final_val["config_name"].tolist()],
+        "after_simplicity_rank": [str(name) for name in stage_simple["config_name"].tolist()],
+        "after_config_name": [str(name) for name in ordered["config_name"].tolist()],
+    }
+
     return {
         "selection_protocol": {
             "primary_metric": "mean_best_val_acc",
             "secondary_metric": "mean_best_val_kappa",
-            "test_leakage_guard": "Session E test metrics were excluded from configuration selection and early stopping.",
+            "selection_metric": "validation_only",
+            "tie_tolerance": FLOAT_TOL,
+            "tie_break_order": tie_break_order,
+            "test_leakage_guard": "Session E test metrics were excluded from configuration selection, seed selection, and early stopping.",
         },
-        "selected_config": sanitize_for_json(selected),
-        "best_config_by_validation": sanitize_for_json(ordered.iloc[0].to_dict()),
-        "selection_reason": "Selected by highest mean_best_val_acc across subjects using only validation from session T.",
+        "selected_config": selected,
+        "selection_metric": "mean_best_val_acc",
+        "tie_tolerance": FLOAT_TOL,
+        "tie_group": [serialize_record(row) for _, row in tie_group.iterrows()],
+        "tie_break_order": tie_break_order,
+        "tie_break_trace": tie_break_trace,
+        "validation_values_used_for_tie_break": {
+            "selected_config": {
+                "config_name": selected["config_name"],
+                "mean_best_val_acc": selected["mean_best_val_acc"],
+                "mean_best_val_kappa": selected["mean_best_val_kappa"],
+                "mean_final_val_acc": selected["mean_final_val_acc"],
+                "simplicity_rank": selected["simplicity_rank"],
+            },
+            "tie_group": [
+                {
+                    "config_name": row["config_name"],
+                    "mean_best_val_acc": row["mean_best_val_acc"],
+                    "mean_best_val_kappa": row["mean_best_val_kappa"],
+                    "mean_final_val_acc": row["mean_final_val_acc"],
+                    "simplicity_rank": row["simplicity_rank"],
+                }
+                for _, row in tie_group.iterrows()
+            ],
+        },
+        "best_config_by_validation": serialize_record(ordered.iloc[0]),
+        "test_usage_confirmation": {
+            "used_for_config_selection": False,
+            "used_for_seed_selection": False,
+            "used_for_early_stopping": False,
+            "used_only_for_final_evaluation": True,
+        },
+        "selection_reason": (
+            "Selected using validation-only metrics from session T with tolerance-aware tie handling: "
+            "mean_best_val_acc, then mean_best_val_kappa, then mean_final_val_acc, then simplicity_rank, "
+            "then config_name as final deterministic fallback."
+        ),
     }
 
 
 def plot_config_metrics(df: pd.DataFrame, output_dir: Path) -> None:
+    if plt is None:
+        print("Skipping config plots: matplotlib is not available.")
+        return
     metrics = [
         ("mean_best_val_acc", "Configuration vs mean best validation accuracy", "config_vs_mean_best_val_acc.png"),
         ("mean_test_acc", "Configuration vs mean test accuracy", "config_vs_mean_test_acc.png"),
@@ -260,6 +382,9 @@ def plot_subject_metric_by_config(
     filename: str,
     output_dir: Path,
 ) -> None:
+    if plt is None:
+        print(f"Skipping plot {filename}: matplotlib is not available.")
+        return
     if subject_df.empty:
         return
     pivot = (
@@ -280,7 +405,10 @@ def plot_subject_metric_by_config(
 
 
 def plot_best_config_training_curves(representative_run: dict[str, object], output_dir: Path) -> None:
-    run_dir = Path(str(representative_run["run_dir"]))
+    if plt is None:
+        print("Skipping best-config training curves: matplotlib is not available.")
+        return
+    run_dir = resolve_path(representative_run["run_dir"])
     subject_dirs = sorted((run_dir / "subjects").glob("*"))
     if not subject_dirs:
         return
@@ -349,6 +477,9 @@ def summarize_best_seed_runs(seed_df: pd.DataFrame, selected_config_name: str, o
 
 
 def plot_best_seed_results(df: pd.DataFrame, output_dir: Path) -> None:
+    if plt is None:
+        print("Skipping best-seed plots: matplotlib is not available.")
+        return
     if df.empty:
         return
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.2))
@@ -394,6 +525,8 @@ def write_interpretation_notes(
     output_path: Path,
 ) -> None:
     selected = best_info["selected_config"]
+    tie_group = best_info.get("tie_group", [])
+    tie_names = ", ".join(str(row["config_name"]) for row in tie_group) if tie_group else "none"
     lines = [
         "EEGNet baseline subject-session interpretation notes",
         "",
@@ -401,14 +534,21 @@ def write_interpretation_notes(
         "- Main protocol: subject-specific cross-session.",
         "- For every subject, session T was split into train/validation.",
         "- Session E was reserved as final test only.",
-        "- Configuration selection used only mean_best_val_acc across subjects.",
-        "- Session E metrics were excluded from early stopping and model selection.",
+        "- Configuration selection used only validation metrics from session T.",
+        "- Session E metrics were excluded from configuration selection, seed selection and early stopping.",
         "",
         "Selected configuration",
         f"- config_name: {selected['config_name']}",
         f"- mean_best_val_acc: {fmt_float(selected['mean_best_val_acc'])}",
         f"- mean_best_val_kappa: {fmt_float(selected['mean_best_val_kappa'])}",
-        f"- mean_test_acc (reference only): {fmt_float(selected['mean_test_acc'])}",
+        f"- mean_final_val_acc: {fmt_float(selected['mean_final_val_acc'])}",
+        f"- simplicity_rank: {selected['simplicity_rank']}",
+        f"- mean_test_acc (reference only, not used for selection): {fmt_float(selected['mean_test_acc'])}",
+        "",
+        "Tie handling",
+        f"- tie_tolerance: {best_info['tie_tolerance']}",
+        f"- effective tie group on validation: {tie_names}",
+        f"- tie-break order: {', '.join(best_info['tie_break_order'])}",
         "",
         "Compared configurations",
     ]
@@ -417,6 +557,15 @@ def write_interpretation_notes(
             f"- {row['config_name']}: mean_best_val_acc={fmt_float(row['mean_best_val_acc'])}, "
             f"mean_test_acc={fmt_float(row['mean_test_acc'])}, mean_test_kappa={fmt_float(row['mean_test_kappa'])}"
         )
+    if tie_group:
+        lines.extend(["", "Tie-group validation details"])
+        for row in tie_group:
+            lines.append(
+                f"- {row['config_name']}: mean_best_val_acc={fmt_float(row['mean_best_val_acc'])}, "
+                f"mean_best_val_kappa={fmt_float(row['mean_best_val_kappa'])}, "
+                f"mean_final_val_acc={fmt_float(row['mean_final_val_acc'])}, "
+                f"simplicity_rank={row['simplicity_rank']}"
+            )
     if not best_seed_df.empty:
         lines.extend(
             [
@@ -452,7 +601,7 @@ def build_best_export(
     export_dir: Path,
     export_tar: Path,
 ) -> None:
-    representative_run_dir = Path(str(best_info["selected_config"]["representative_run"]["run_dir"]))
+    representative_run_dir = resolve_path(best_info["selected_config"]["representative_run"]["run_dir"])
     backup_existing_path(export_dir)
     backup_existing_path(export_tar)
     export_dir.mkdir(parents=True, exist_ok=True)
@@ -463,7 +612,7 @@ def build_best_export(
     seeds_dir = export_dir / "best_config_seeds"
     seeds_dir.mkdir(exist_ok=True)
     for _, row in best_seed_df.iterrows():
-        run_dir = Path(str(row["run_dir"]))
+        run_dir = resolve_path(row["run_dir"])
         if run_dir.exists():
             shutil.copytree(run_dir, seeds_dir / run_dir.name)
 

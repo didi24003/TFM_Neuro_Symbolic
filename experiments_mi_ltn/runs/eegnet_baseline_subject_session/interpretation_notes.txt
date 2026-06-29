@@ -1,0 +1,41 @@
+EEGNet baseline subject-session interpretation notes
+
+Methodology
+- Main protocol: subject-specific cross-session.
+- For every subject, session T was split into train/validation.
+- Session E was reserved as final test only.
+- Configuration selection used only validation metrics from session T.
+- Session E metrics were excluded from configuration selection, seed selection and early stopping.
+
+Selected configuration
+- config_name: weight_decay
+- mean_best_val_acc: 0.6250
+- mean_best_val_kappa: 0.5000
+- mean_final_val_acc: 0.5893
+- simplicity_rank: 3
+- mean_test_acc (reference only, not used for selection): 0.4769
+
+Tie handling
+- tie_tolerance: 1e-06
+- effective tie group on validation: weight_decay, long_training_300, long_training_500
+- tie-break order: mean_best_val_acc, mean_best_val_kappa, mean_final_val_acc, simplicity_rank, config_name
+
+Compared configurations
+- weight_decay: mean_best_val_acc=0.6250, mean_test_acc=0.4769, mean_test_kappa=0.3025
+- long_training_300: mean_best_val_acc=0.6250, mean_test_acc=0.5058, mean_test_kappa=0.3410
+- long_training_500: mean_best_val_acc=0.6250, mean_test_acc=0.5058, mean_test_kappa=0.3410
+- lr_high: mean_best_val_acc=0.6171, mean_test_acc=0.4884, mean_test_kappa=0.3179
+- lr_low: mean_best_val_acc=0.6131, mean_test_acc=0.5073, mean_test_kappa=0.3431
+- scheduler_plateau: mean_best_val_acc=0.5972, mean_test_acc=0.4672, mean_test_kappa=0.2896
+- baseline_short: mean_best_val_acc=0.5813, mean_test_acc=0.4900, mean_test_kappa=0.3200
+
+Tie-group validation details
+- weight_decay: mean_best_val_acc=0.6250, mean_best_val_kappa=0.5000, mean_final_val_acc=0.5893, simplicity_rank=3
+- long_training_300: mean_best_val_acc=0.6250, mean_best_val_kappa=0.5000, mean_final_val_acc=0.5873, simplicity_rank=5
+- long_training_500: mean_best_val_acc=0.6250, mean_best_val_kappa=0.5000, mean_final_val_acc=0.5873, simplicity_rank=6
+
+Best-config multi-seed aggregate
+- seeds evaluated: 0, 7, 42, 123, 2024
+- mean(mean_best_val_acc): 0.6071
+- mean(mean_test_acc): 0.4928
+- std(mean_test_acc): 0.0101
