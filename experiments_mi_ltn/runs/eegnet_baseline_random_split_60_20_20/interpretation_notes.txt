@@ -1,0 +1,36 @@
+EEGNet baseline random split 60/20/20 interpretation notes
+
+Protocol
+- Preliminary exploratory experiment with random train/validation/test split.
+- Ratios: 0.6 / 0.2 / 0.2.
+- The split is subject-aware and class-stratified within subject.
+- Sessions T and E can appear mixed inside train, validation and test.
+- This protocol is not the final subject-specific cross-session evaluation.
+
+Selection criterion
+- Primary metric: best validation accuracy.
+- Tie tolerance: 0.002.
+- Secondary information only: final validation accuracy and test accuracy.
+- Test metrics were not used for configuration selection or early stopping.
+
+Selected configuration
+- config_name: long_training_300
+- reason: selected_from_near_tie_by_simplicity
+- best_val_acc: 0.7347
+- final_val_acc: 0.7347
+- test_acc: 0.7270
+
+Best seed among selected configuration
+- seed: 123
+- best_val_acc: 0.7615
+- final_val_acc: 0.7615
+- test_acc: 0.7356
+- test_kappa: 0.6475
+- macro_f1_test: 0.7363
+
+Multi-seed aggregate
+- best_val_acc: mean=0.7406, std=0.0138, min=0.7251, max=0.7615, n=5
+- final_val_acc: mean=0.7406, std=0.0138, min=0.7251, max=0.7615, n=5
+- final_test_acc: mean=0.7249, std=0.0227, min=0.6897, max=0.7510, n=5
+- final_test_kappa: mean=0.6332, std=0.0302, min=0.5862, max=0.6679, n=5
+- macro_f1_test: mean=0.7249, std=0.0230, min=0.6887, max=0.7508, n=5

@@ -1,0 +1,28 @@
+{
+  "protocol": "random train/validation/test split 60/20/20",
+  "mixes_sessions": true,
+  "split_seed": 7,
+  "train_ratio": 0.6,
+  "val_ratio": 0.2,
+  "test_ratio": 0.2,
+  "split_strategy": "subject_aware_class_stratified_within_subject",
+  "train_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed7_val0p2000_test0p2000_limitall/train_indices.csv",
+  "validation_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed7_val0p2000_test0p2000_limitall/validation_indices.csv",
+  "test_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed7_val0p2000_test0p2000_limitall/test_indices.csv",
+  "split_summary_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed7_val0p2000_test0p2000_limitall/split_summary.csv",
+  "session_counts_by_split": {
+    "test": {
+      "E": 529,
+      "T": 515
+    },
+    "train": {
+      "E": 1530,
+      "T": 1566
+    },
+    "validation": {
+      "E": 533,
+      "T": 511
+    }
+  },
+  "exported_at": "2026-07-01T16:55:27.650121+00:00"
+}

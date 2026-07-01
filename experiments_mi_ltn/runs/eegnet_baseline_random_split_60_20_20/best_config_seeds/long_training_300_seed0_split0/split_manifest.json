@@ -1,0 +1,37 @@
+{
+  "protocol": "random_train_validation_test_60_20_20_preliminary",
+  "split_strategy": "subject_aware_class_stratified_within_subject",
+  "split_seed": 0,
+  "train_ratio": 0.6,
+  "val_ratio": 0.2,
+  "test_ratio": 0.2,
+  "limit_samples": null,
+  "dataset_size": 5184,
+  "num_selected_samples": 5184,
+  "train_size": 3096,
+  "validation_size": 1044,
+  "test_size": 1044,
+  "mixes_sessions": true,
+  "session_counts_by_split": {
+    "test": {
+      "E": 553,
+      "T": 491
+    },
+    "train": {
+      "E": 1500,
+      "T": 1596
+    },
+    "validation": {
+      "E": 539,
+      "T": 505
+    }
+  },
+  "train_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/train_indices.csv",
+  "validation_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/validation_indices.csv",
+  "test_indices_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/test_indices.csv",
+  "split_summary_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/split_summary.csv",
+  "created_at": "2026-07-01T16:28:36.415067+00:00",
+  "shared_split_manifest_json": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/split_manifest.json",
+  "shared_split_summary_csv": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/shared_trial_splits/subject_stratified_seed0_val0p2000_test0p2000_limitall/split_summary.csv",
+  "canonical_split_json": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/split_indices/split_seed_0.json"
+}

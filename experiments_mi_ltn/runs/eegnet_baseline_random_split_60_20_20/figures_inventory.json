@@ -1,0 +1,37 @@
+[
+  {
+    "figure": "training_curves_seed42.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/training_curves_seed42.png"
+  },
+  {
+    "figure": "training_curves_seed2024.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/training_curves_seed2024.png"
+  },
+  {
+    "figure": "validation_accuracy_by_config.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/validation_accuracy_by_config.png"
+  },
+  {
+    "figure": "test_accuracy_by_config.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/test_accuracy_by_config.png"
+  },
+  {
+    "figure": "seed_variability_accuracy.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/seed_variability_accuracy.png"
+  },
+  {
+    "figure": "confusion_matrix_best_seed.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/confusion_matrix_best_seed.png"
+  },
+  {
+    "figure": "loss_curves_best_seed.png",
+    "exists": true,
+    "path": "/home/m1tus/diana/TFM_Neuro_Symbolic/experiments_mi_ltn/runs/eegnet_baseline_random_split_60_20_20/analysis_figures/loss_curves_best_seed.png"
+  }
+]
