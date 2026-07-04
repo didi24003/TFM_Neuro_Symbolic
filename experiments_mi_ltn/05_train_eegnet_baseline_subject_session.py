@@ -23,8 +23,10 @@ from mi_ltn_common import (
     RUNS_DIR,
     build_dataset,
     build_model,
+    env_flag,
     get_device,
     seed_everything,
+    str2bool,
 )
 from subject_session_utils import save_subject_session_split, split_subject_session_indices, subject_ids, write_json
 
@@ -59,6 +61,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--subject-ids", nargs="*", default=None)
+    parser.add_argument(
+        "--skip-trial-with-artifacts",
+        type=str2bool,
+        default=env_flag("SKIP_ARTIFACTS", False),
+        help="Exclude trials flagged as artifacts in the BCICIV 2a metadata.",
+    )
     return parser.parse_args()
 
 
@@ -344,6 +352,7 @@ def write_subject_args(args: argparse.Namespace, path: Path, subject_id: str) ->
     payload["subject_id"] = subject_id
     payload["train_session"] = "T"
     payload["test_session"] = "E"
+    payload["skip_trial_with_artifacts"] = bool(args.skip_trial_with_artifacts)
     write_json(path, payload)
     return path
 
@@ -527,6 +536,7 @@ def train_subject(
         "early_stopping_patience": args.early_stopping_patience,
         "checkpoint_every": args.checkpoint_every,
         "val_ratio": args.val_ratio,
+        "skip_trial_with_artifacts": bool(args.skip_trial_with_artifacts),
         "best_epoch": best_epoch,
         "best_val_acc": None if best_val_snapshot is None else best_val_snapshot["best_val_acc"],
         "best_val_kappa": None if best_val_snapshot is None else best_val_snapshot["best_val_kappa"],
@@ -633,7 +643,11 @@ def main() -> None:
     args_path = run_dir / "args.json"
     write_json(args_path, vars(args))
 
-    dataset = build_dataset(args.data_root, verbose=True)
+    dataset = build_dataset(
+        args.data_root,
+        verbose=True,
+        skip_trial_with_artifacts=args.skip_trial_with_artifacts,
+    )
     available_subjects = subject_ids(dataset)
     selected_subjects = args.subject_ids if args.subject_ids else available_subjects
     unknown_subjects = sorted(set(selected_subjects).difference(available_subjects))
@@ -673,6 +687,7 @@ def main() -> None:
         "early_stopping_patience": args.early_stopping_patience,
         "checkpoint_every": args.checkpoint_every,
         "val_ratio": args.val_ratio,
+        "skip_trial_with_artifacts": bool(args.skip_trial_with_artifacts),
         "subject_ids": selected_subjects,
         "subject_metrics_csv": str(subject_metrics_path),
         "args_json": str(args_path),

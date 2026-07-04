@@ -7,14 +7,6 @@ TRAIN_SCRIPT="${SCRIPT_DIR}/05_train_eegnet_baseline_subject_session.py"
 CONFIG_SWEEP_SCRIPT="${SCRIPT_DIR}/run_eegnet_baseline_subject_session_configs.sh"
 SUMMARY_SCRIPT="${SCRIPT_DIR}/summarize_eegnet_baseline_subject_session.py"
 
-RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
-CONFIG_RUN_ROOT="${RUN_ROOT}/config_runs"
-BEST_SEEDS_RUN_ROOT="${RUN_ROOT}/best_config_seeds"
-LOG_DIR="${RUN_ROOT}/logs"
-ANALYSIS_FIGURES_DIR="${RUN_ROOT}/analysis_figures"
-BEST_CONFIG_JSON="${RUN_ROOT}/baseline_subject_session_best_config_summary.json"
-BEST_EXPORT_TAR="${RUN_ROOT}/best_export_eegnet_baseline_subject_session.tar.gz"
-
 PYTHON_BIN="${PYTHON:-python}"
 DATA_ROOT="${DATA_ROOT:-${REPO_ROOT}/data/BCICIV_2a_mat}"
 SEEDS="${SEEDS:-0 7 42 123 2024}"
@@ -25,6 +17,20 @@ CONFIG_SWEEP_SEED="${CONFIG_SWEEP_SEED:-42}"
 CONFIG_SWEEP_SPLIT_SEED="${CONFIG_SWEEP_SPLIT_SEED:-${CONFIG_SWEEP_SEED}}"
 VAL_MODE="${VAL_MODE:-stratified_trialwise}"
 SELECTION_METRIC="${SELECTION_METRIC:-val_acc}"
+SKIP_ARTIFACTS="${SKIP_ARTIFACTS:-0}"
+
+if [[ "${SKIP_ARTIFACTS}" == "1" ]]; then
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free"
+else
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
+fi
+RUN_ROOT="${OUT_DIR:-${RUN_ROOT:-${DEFAULT_RUN_ROOT}}}"
+CONFIG_RUN_ROOT="${RUN_ROOT}/config_runs"
+BEST_SEEDS_RUN_ROOT="${RUN_ROOT}/best_config_seeds"
+LOG_DIR="${RUN_ROOT}/logs"
+ANALYSIS_FIGURES_DIR="${RUN_ROOT}/analysis_figures"
+BEST_CONFIG_JSON="${RUN_ROOT}/baseline_subject_session_best_config_summary.json"
+BEST_EXPORT_TAR="${RUN_ROOT}/best_export_eegnet_baseline_subject_session.tar.gz"
 
 DRY_RUN=false
 SUMMARY_ONLY=false
@@ -43,6 +49,7 @@ Main modes:
 Environment variables:
   DATA_ROOT=/path/to/dataset
   SEEDS="0 7 42 123 2024"
+  OUT_DIR=experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free
   DEVICE_ARG=auto
   NUM_WORKERS=0
   CHECKPOINT_EVERY=10
@@ -147,13 +154,16 @@ run_config_sweep() {
     CONFIG_SWEEP_SPLIT_SEED="${CONFIG_SWEEP_SPLIT_SEED}" \
     VAL_MODE="${VAL_MODE}" \
     SELECTION_METRIC="${SELECTION_METRIC}" \
+    SKIP_ARTIFACTS="${SKIP_ARTIFACTS}" \
+    OUT_DIR="${RUN_ROOT}" \
+    RUN_ROOT="${RUN_ROOT}" \
     bash "${CONFIG_SWEEP_SCRIPT}" $([[ "${DRY_RUN}" == "true" ]] && printf '%s' "--dry-run")
 }
 
 run_summary() {
   CURRENT_STEP="run_summary"
   echo "[Phase 2/6 or 6/6] Regenerating summaries, figures, notes and export bundle"
-  run_cmd "${PYTHON_BIN}" "${SUMMARY_SCRIPT}"
+  run_cmd "${PYTHON_BIN}" "${SUMMARY_SCRIPT}" --run-root "${RUN_ROOT}"
 }
 
 read_selected_config_field() {
@@ -222,9 +232,10 @@ run_best_config_seeds() {
       --val-mode "${VAL_MODE}" \
       --selection-metric "${SELECTION_METRIC}" \
       --seed "${seed}" \
-      --split-seed "${split_seed}" \
-      --device "${DEVICE_ARG}" \
-      --num-workers "${NUM_WORKERS}"
+	      --split-seed "${split_seed}" \
+	      --device "${DEVICE_ARG}" \
+	      --num-workers "${NUM_WORKERS}" \
+	      --skip-trial-with-artifacts "${SKIP_ARTIFACTS}"
   done
 }
 

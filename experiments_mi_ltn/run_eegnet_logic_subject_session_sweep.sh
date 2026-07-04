@@ -4,8 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TRAIN_SCRIPT="${SCRIPT_DIR}/06_train_eegnet_logic_subject_session.py"
-RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session"
-LOGIC_RUN_ROOT="${RUN_ROOT}/logic_runs"
 
 PYTHON_BIN="${PYTHON:-python}"
 DATA_ROOT="${DATA_ROOT:-${REPO_ROOT}/data/BCICIV_2a_mat}"
@@ -25,6 +23,15 @@ SCHEDULER="${SCHEDULER:-none}"
 PLATEAU_FACTOR="${PLATEAU_FACTOR:-0.5}"
 PLATEAU_PATIENCE="${PLATEAU_PATIENCE:-10}"
 EARLY_STOPPING_PATIENCE="${EARLY_STOPPING_PATIENCE:-50}"
+SKIP_ARTIFACTS="${SKIP_ARTIFACTS:-0}"
+
+if [[ "${SKIP_ARTIFACTS}" == "1" ]]; then
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session_artifact_free"
+else
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session"
+fi
+RUN_ROOT="${OUT_DIR:-${RUN_ROOT:-${DEFAULT_RUN_ROOT}}}"
+LOGIC_RUN_ROOT="${LOGIC_RUN_ROOT:-${RUN_ROOT}/logic_runs}"
 
 DRY_RUN=false
 
@@ -122,9 +129,10 @@ run_experiment() {
     --selection-metric "${SELECTION_METRIC}" \
     --seed "${seed}" \
     --split-seed "${split_seed}" \
-    --lambda-rule "${lambda_rule}" \
-    --device "${DEVICE_ARG}" \
-    --num-workers "${NUM_WORKERS}"
+	    --lambda-rule "${lambda_rule}" \
+	    --device "${DEVICE_ARG}" \
+	    --num-workers "${NUM_WORKERS}" \
+	    --skip-trial-with-artifacts "${SKIP_ARTIFACTS}"
 }
 
 for seed in ${SEEDS}; do

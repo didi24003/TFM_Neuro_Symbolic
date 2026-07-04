@@ -598,6 +598,7 @@ def build_best_export(
     best_seeds_latex: Path,
     root_subject_metrics_csv: Path,
     interpretation_notes: Path,
+    analysis_dir: Path,
     export_dir: Path,
     export_tar: Path,
 ) -> None:
@@ -616,8 +617,8 @@ def build_best_export(
         if run_dir.exists():
             shutil.copytree(run_dir, seeds_dir / run_dir.name)
 
-    if ANALYSIS_DIR.exists():
-        shutil.copytree(ANALYSIS_DIR, export_dir / "analysis_figures")
+    if analysis_dir.exists():
+        shutil.copytree(analysis_dir, export_dir / "analysis_figures")
 
     for path in [
         config_summary_csv,
@@ -705,6 +706,7 @@ def main() -> None:
         best_seeds_latex=best_seeds_latex,
         root_subject_metrics_csv=root_subject_metrics_csv,
         interpretation_notes=interpretation_notes,
+        analysis_dir=analysis_dir,
         export_dir=best_export_dir,
         export_tar=best_export_tar,
     )

@@ -26,9 +26,11 @@ from mi_ltn_common import (
     NUM_ELECTRODES,
     RUNS_DIR,
     build_dataset,
+    env_flag,
     get_device,
     load_eegnet_class,
     seed_everything,
+    str2bool,
 )
 from subject_session_utils import save_subject_session_split, split_subject_session_indices, subject_ids, write_json
 
@@ -71,6 +73,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--subject-ids", nargs="*", default=None)
+    parser.add_argument(
+        "--skip-trial-with-artifacts",
+        type=str2bool,
+        default=env_flag("SKIP_ARTIFACTS", False),
+        help="Exclude trials flagged as artifacts in the BCICIV 2a metadata.",
+    )
     parser.add_argument("--channel-order-file", type=Path, default=SCRIPT_DIR / "bciciv2a_channel_order.txt")
     parser.add_argument("--lambda-rule", type=float, default=0.0)
     parser.add_argument("--target-sm-mean", type=float, default=1.0)
@@ -642,6 +650,7 @@ def write_subject_args(args: argparse.Namespace, path: Path, subject_id: str) ->
     payload["subject_id"] = subject_id
     payload["train_session"] = "T"
     payload["test_session"] = "E"
+    payload["skip_trial_with_artifacts"] = bool(args.skip_trial_with_artifacts)
     payload["channel_groups"] = {
         "sensorimotor": SENSORIMOTOR_CHANNELS,
         "posterior": POSTERIOR_CHANNELS,
@@ -939,6 +948,7 @@ def train_subject(
         "early_stopping_patience": args.early_stopping_patience,
         "checkpoint_every": args.checkpoint_every,
         "val_ratio": args.val_ratio,
+        "skip_trial_with_artifacts": bool(args.skip_trial_with_artifacts),
         "lambda_rule": args.lambda_rule,
         "target_sm_mean": args.target_sm_mean,
         "target_post_mean": args.target_post_mean,
@@ -1072,7 +1082,11 @@ def main() -> None:
     args_path = run_dir / "args.json"
     write_json(args_path, vars(args))
 
-    dataset = build_dataset(args.data_root, verbose=True)
+    dataset = build_dataset(
+        args.data_root,
+        verbose=True,
+        skip_trial_with_artifacts=args.skip_trial_with_artifacts,
+    )
     sample_x, _ = dataset[0]
     if tuple(sample_x.shape) != (1, NUM_ELECTRODES, CHUNK_SIZE):
         raise ValueError(f"Unexpected dataset sample shape: {tuple(sample_x.shape)}")
@@ -1132,6 +1146,7 @@ def main() -> None:
         "early_stopping_patience": args.early_stopping_patience,
         "checkpoint_every": args.checkpoint_every,
         "val_ratio": args.val_ratio,
+        "skip_trial_with_artifacts": bool(args.skip_trial_with_artifacts),
         "lambda_rule": args.lambda_rule,
         "target_sm_mean": args.target_sm_mean,
         "target_post_mean": args.target_post_mean,

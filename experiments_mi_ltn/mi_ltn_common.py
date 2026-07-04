@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import random
+import os
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -99,10 +100,13 @@ def build_dataset(
     data_root: Path | str = DEFAULT_DATA_ROOT,
     io_path: Optional[Path | str] = DEFAULT_IO_ROOT,
     verbose: bool = False,
+    skip_trial_with_artifacts: bool = False,
 ) -> BCICIV2aDataset:
     data_root = Path(data_root).expanduser().resolve()
     if io_path is not None:
         io_path = Path(io_path).expanduser().resolve()
+        if skip_trial_with_artifacts and io_path == DEFAULT_IO_ROOT.resolve():
+            io_path = io_path.parent / f"{io_path.name}_skip_artifacts"
         io_path.parent.mkdir(parents=True, exist_ok=True)
 
     return BCICIV2aDataset(
@@ -110,6 +114,7 @@ def build_dataset(
         io_path=str(io_path) if io_path is not None else None,
         chunk_size=CHUNK_SIZE,
         num_channel=NUM_ELECTRODES,
+        skip_trial_with_artifacts=skip_trial_with_artifacts,
         online_transform=transforms.Compose(
             [
                 transforms.To2d(),
@@ -124,6 +129,25 @@ def build_dataset(
         ),
         verbose=verbose,
     )
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    value = value.strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def str2bool(value: str | bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"Invalid boolean value: {value}")
 
 
 def split_dataset(

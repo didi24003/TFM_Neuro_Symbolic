@@ -5,9 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SWEEP_SCRIPT="${SCRIPT_DIR}/run_eegnet_logic_subject_session_sweep.sh"
 SUMMARY_SCRIPT="${SCRIPT_DIR}/summarize_eegnet_logic_subject_session.py"
-BASELINE_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
-RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session"
-LOG_DIR="${RUN_ROOT}/logs"
 
 PYTHON_BIN="${PYTHON:-python}"
 DATA_ROOT="${DATA_ROOT:-${REPO_ROOT}/data/BCICIV_2a_mat}"
@@ -18,6 +15,18 @@ CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-10}"
 VAL_MODE="${VAL_MODE:-stratified_trialwise}"
 SELECTION_METRIC="${SELECTION_METRIC:-val_acc}"
 LAMBDA_RULES="${LAMBDA_RULES:-0.0 0.001 0.01 0.05 0.1 0.2 0.5 1.0}"
+SKIP_ARTIFACTS="${SKIP_ARTIFACTS:-0}"
+
+if [[ "${SKIP_ARTIFACTS}" == "1" ]]; then
+  DEFAULT_BASELINE_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free"
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session_artifact_free"
+else
+  DEFAULT_BASELINE_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_logic_subject_session"
+fi
+BASELINE_RUN_ROOT="${BASELINE_RUN_ROOT:-${DEFAULT_BASELINE_RUN_ROOT}}"
+RUN_ROOT="${OUT_DIR:-${RUN_ROOT:-${DEFAULT_RUN_ROOT}}}"
+LOG_DIR="${RUN_ROOT}/logs"
 
 DRY_RUN=false
 SUMMARY_ONLY=false
@@ -37,6 +46,7 @@ Environment variables:
   DATA_ROOT=/path/to/dataset
   SEEDS="0 7 42 123 2024"
   LAMBDA_RULES="0.0 0.001 0.01 0.05 0.1 0.2 0.5 1.0"
+  OUT_DIR=experiments_mi_ltn/runs/eegnet_logic_subject_session_artifact_free
   DEVICE_ARG=auto
   NUM_WORKERS=0
 EOF
@@ -98,9 +108,13 @@ check_required_files() {
   local required=(
     "${SWEEP_SCRIPT}"
     "${SUMMARY_SCRIPT}"
-    "${BASELINE_RUN_ROOT}/baseline_subject_session_best_config_summary.json"
-    "${BASELINE_RUN_ROOT}/baseline_subject_session_best_seeds_summary.csv"
   )
+  if [[ "${DRY_RUN}" != "true" ]]; then
+    required+=(
+      "${BASELINE_RUN_ROOT}/baseline_subject_session_best_config_summary.json"
+      "${BASELINE_RUN_ROOT}/baseline_subject_session_best_seeds_summary.csv"
+    )
+  fi
   for path in "${required[@]}"; do
     if [[ ! -e "${path}" ]]; then
       echo "Required file missing: ${path}" >&2
@@ -140,6 +154,9 @@ run_sweep() {
     CHECKPOINT_EVERY="${CHECKPOINT_EVERY}" \
     VAL_MODE="${VAL_MODE}" \
     SELECTION_METRIC="${SELECTION_METRIC}" \
+    SKIP_ARTIFACTS="${SKIP_ARTIFACTS}" \
+    OUT_DIR="${RUN_ROOT}" \
+    RUN_ROOT="${RUN_ROOT}" \
     bash "${SWEEP_SCRIPT}" $([[ "${DRY_RUN}" == "true" ]] && printf '%s' "--dry-run")
 }
 

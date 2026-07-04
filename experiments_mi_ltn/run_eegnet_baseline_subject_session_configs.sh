@@ -4,8 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TRAIN_SCRIPT="${SCRIPT_DIR}/05_train_eegnet_baseline_subject_session.py"
-RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
-CONFIG_RUN_ROOT="${RUN_ROOT}/config_runs"
 
 PYTHON_BIN="${PYTHON:-python}"
 DATA_ROOT="${DATA_ROOT:-${REPO_ROOT}/data/BCICIV_2a_mat}"
@@ -16,6 +14,15 @@ CONFIG_SWEEP_SPLIT_SEED="${CONFIG_SWEEP_SPLIT_SEED:-${CONFIG_SWEEP_SEED}}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-10}"
 VAL_MODE="${VAL_MODE:-stratified_trialwise}"
 SELECTION_METRIC="${SELECTION_METRIC:-val_acc}"
+SKIP_ARTIFACTS="${SKIP_ARTIFACTS:-0}"
+
+if [[ "${SKIP_ARTIFACTS}" == "1" ]]; then
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free"
+else
+  DEFAULT_RUN_ROOT="${REPO_ROOT}/experiments_mi_ltn/runs/eegnet_baseline_subject_session"
+fi
+RUN_ROOT="${OUT_DIR:-${RUN_ROOT:-${DEFAULT_RUN_ROOT}}}"
+CONFIG_RUN_ROOT="${RUN_ROOT}/config_runs"
 
 DRY_RUN=false
 
@@ -105,6 +112,7 @@ run_experiment() {
     --device "${DEVICE_ARG}" \
     --num-workers "${NUM_WORKERS}" \
     --checkpoint-every "${CHECKPOINT_EVERY}" \
+    --skip-trial-with-artifacts "${SKIP_ARTIFACTS}" \
     "$@"
 }
 
