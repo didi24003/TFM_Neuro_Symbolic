@@ -1,0 +1,33 @@
+EEGNet baseline subject-session interpretation notes
+
+Methodology
+- Main protocol: subject-specific cross-session.
+- For every subject, session T was split into train/validation.
+- Session E was reserved as final test only.
+- Configuration selection used only validation metrics from session T.
+- Session E metrics were excluded from configuration selection, seed selection and early stopping.
+
+Selected configuration
+- config_name: lr_high
+- mean_best_val_acc: 0.6322
+- mean_best_val_kappa: 0.5096
+- mean_final_val_acc: 0.5961
+- simplicity_rank: 2
+- mean_test_acc (reference only, not used for selection): 0.5028
+
+Tie handling
+- tie_tolerance: 1e-06
+- effective tie group on validation: lr_high
+- tie-break order: mean_best_val_acc, mean_best_val_kappa, mean_final_val_acc, simplicity_rank, config_name
+
+Compared configurations
+- lr_high: mean_best_val_acc=0.6322, mean_test_acc=0.5028, mean_test_kappa=0.3368
+- long_training_300: mean_best_val_acc=0.6008, mean_test_acc=0.4932, mean_test_kappa=0.3236
+- long_training_500: mean_best_val_acc=0.6008, mean_test_acc=0.4932, mean_test_kappa=0.3236
+- lr_low: mean_best_val_acc=0.5946, mean_test_acc=0.4684, mean_test_kappa=0.2909
+- weight_decay: mean_best_val_acc=0.5858, mean_test_acc=0.4741, mean_test_kappa=0.2985
+- baseline_short: mean_best_val_acc=0.5576, mean_test_acc=0.4600, mean_test_kappa=0.2797
+- scheduler_plateau: mean_best_val_acc=0.5321, mean_test_acc=0.4230, mean_test_kappa=0.2304
+
+Tie-group validation details
+- lr_high: mean_best_val_acc=0.6322, mean_best_val_kappa=0.5096, mean_final_val_acc=0.5961, simplicity_rank=2

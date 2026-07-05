@@ -1,0 +1,181 @@
+{
+  "selection_protocol": {
+    "primary_metric": "mean_best_val_acc",
+    "secondary_metric": "mean_best_val_kappa",
+    "selection_metric": "validation_only",
+    "tie_tolerance": 1e-06,
+    "tie_break_order": [
+      "mean_best_val_acc",
+      "mean_best_val_kappa",
+      "mean_final_val_acc",
+      "simplicity_rank",
+      "config_name"
+    ],
+    "test_leakage_guard": "Session E test metrics were excluded from configuration selection, seed selection, and early stopping."
+  },
+  "selected_config": {
+    "config_name": "lr_high",
+    "num_runs": 1,
+    "seeds": "42",
+    "mean_best_val_acc": 0.6321739643129959,
+    "mean_best_val_kappa": 0.5095800382426696,
+    "mean_final_val_acc": 0.5961016842996599,
+    "mean_test_acc": 0.5027864918996029,
+    "mean_test_kappa": 0.3368084825095865,
+    "mean_macro_f1": 0.5038669342855143,
+    "epochs_requested": 300,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "scheduler": "none",
+    "plateau_factor": 0.5,
+    "plateau_patience": 10,
+    "early_stopping_patience": 50,
+    "simplicity_rank": 2,
+    "representative_run": {
+      "model": "EEGNet",
+      "protocol": "subject_specific_cross_session",
+      "block": "eegnet_baseline_subject_session",
+      "config_name": "lr_high",
+      "phase_tag": "config_sweep",
+      "seed": 42,
+      "split_seed": 42,
+      "device": "cuda",
+      "selection_metric": "val_acc",
+      "val_mode": "stratified_trialwise",
+      "run_holdout_index": null,
+      "train_session": "T",
+      "test_session": "E",
+      "epochs_requested": 300,
+      "batch_size": 64,
+      "learning_rate": 0.001,
+      "weight_decay": 0.0,
+      "scheduler": "none",
+      "plateau_factor": 0.5,
+      "plateau_patience": 10,
+      "early_stopping_patience": 50,
+      "checkpoint_every": 10,
+      "val_ratio": 0.2,
+      "skip_trial_with_artifacts": true,
+      "subject_ids": [
+        "A01",
+        "A02",
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09"
+      ],
+      "subject_metrics_csv": "experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free/config_runs/lr_high_seed42_split42/subject_metrics.csv",
+      "args_json": "experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free/config_runs/lr_high_seed42_split42/args.json",
+      "summary_json": "experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free/config_runs/lr_high_seed42_split42/summary.json",
+      "run_dir": "experiments_mi_ltn/runs/eegnet_baseline_subject_session_artifact_free/config_runs/lr_high_seed42_split42",
+      "status": "completed",
+      "num_subjects": 9,
+      "mean_best_val_acc": 0.6321739643129959,
+      "std_best_val_acc": 0.11271745545481648,
+      "mean_best_val_kappa": 0.5095800382426696,
+      "mean_final_val_acc": 0.5961016842996599,
+      "mean_test_acc": 0.5027864918996029,
+      "std_test_acc": 0.07739236672532755,
+      "mean_test_kappa": 0.3368084825095865,
+      "mean_macro_f1": 0.5038669342855143,
+      "run_id": "lr_high_seed42_split42"
+    }
+  },
+  "selection_metric": "mean_best_val_acc",
+  "tie_tolerance": 1e-06,
+  "tie_group": [
+    {
+      "config_name": "lr_high",
+      "num_runs": 1,
+      "seeds": "42",
+      "mean_best_val_acc": 0.6321739643129959,
+      "mean_best_val_kappa": 0.5095800382426696,
+      "mean_final_val_acc": 0.5961016842996599,
+      "mean_test_acc": 0.5027864918996029,
+      "mean_test_kappa": 0.3368084825095865,
+      "mean_macro_f1": 0.5038669342855143,
+      "epochs_requested": 300,
+      "batch_size": 64,
+      "learning_rate": 0.001,
+      "weight_decay": 0.0,
+      "scheduler": "none",
+      "plateau_factor": 0.5,
+      "plateau_patience": 10,
+      "early_stopping_patience": 50,
+      "simplicity_rank": 2
+    }
+  ],
+  "tie_break_order": [
+    "mean_best_val_acc",
+    "mean_best_val_kappa",
+    "mean_final_val_acc",
+    "simplicity_rank",
+    "config_name"
+  ],
+  "tie_break_trace": {
+    "after_mean_best_val_acc": [
+      "lr_high"
+    ],
+    "after_mean_best_val_kappa": [
+      "lr_high"
+    ],
+    "after_mean_final_val_acc": [
+      "lr_high"
+    ],
+    "after_simplicity_rank": [
+      "lr_high"
+    ],
+    "after_config_name": [
+      "lr_high"
+    ]
+  },
+  "validation_values_used_for_tie_break": {
+    "selected_config": {
+      "config_name": "lr_high",
+      "mean_best_val_acc": 0.6321739643129959,
+      "mean_best_val_kappa": 0.5095800382426696,
+      "mean_final_val_acc": 0.5961016842996599,
+      "simplicity_rank": 2
+    },
+    "tie_group": [
+      {
+        "config_name": "lr_high",
+        "mean_best_val_acc": 0.6321739643129959,
+        "mean_best_val_kappa": 0.5095800382426696,
+        "mean_final_val_acc": 0.5961016842996599,
+        "simplicity_rank": 2
+      }
+    ]
+  },
+  "best_config_by_validation": {
+    "config_name": "lr_high",
+    "num_runs": 1,
+    "seeds": "42",
+    "mean_best_val_acc": 0.6321739643129959,
+    "mean_best_val_kappa": 0.5095800382426696,
+    "mean_final_val_acc": 0.5961016842996599,
+    "mean_test_acc": 0.5027864918996029,
+    "mean_test_kappa": 0.3368084825095865,
+    "mean_macro_f1": 0.5038669342855143,
+    "epochs_requested": 300,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "scheduler": "none",
+    "plateau_factor": 0.5,
+    "plateau_patience": 10,
+    "early_stopping_patience": 50,
+    "simplicity_rank": 2
+  },
+  "test_usage_confirmation": {
+    "used_for_config_selection": false,
+    "used_for_seed_selection": false,
+    "used_for_early_stopping": false,
+    "used_only_for_final_evaluation": true
+  },
+  "selection_reason": "Selected using validation-only metrics from session T with tolerance-aware tie handling: mean_best_val_acc, then mean_best_val_kappa, then mean_final_val_acc, then simplicity_rank, then config_name as final deterministic fallback."
+}

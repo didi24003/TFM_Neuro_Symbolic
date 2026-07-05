@@ -207,6 +207,7 @@ def aggregate_configs(df: pd.DataFrame) -> pd.DataFrame:
             learning_rate=("learning_rate", "first"),
             weight_decay=("weight_decay", "first"),
             scheduler=("scheduler", "first"),
+            plateau_factor=("plateau_factor", "first"),
             plateau_patience=("plateau_patience", "first"),
             early_stopping_patience=("early_stopping_patience", "first"),
         )
@@ -231,6 +232,7 @@ def write_configs_summary(df: pd.DataFrame, output_csv: Path) -> None:
         "learning_rate",
         "weight_decay",
         "scheduler",
+        "plateau_factor",
         "plateau_patience",
         "early_stopping_patience",
     ]
@@ -437,7 +439,6 @@ def plot_best_config_training_curves(representative_run: dict[str, object], outp
 
 
 def summarize_best_seed_runs(seed_df: pd.DataFrame, selected_config_name: str, output_csv: Path, output_tex: Path) -> pd.DataFrame:
-    filtered = seed_df[seed_df["config_name"] == selected_config_name].copy()
     columns = [
         "config_name",
         "run_id",
@@ -452,10 +453,18 @@ def summarize_best_seed_runs(seed_df: pd.DataFrame, selected_config_name: str, o
         "summary_json",
         "subject_metrics_csv",
     ]
-    if filtered.empty:
-        pd.DataFrame(columns=columns).to_csv(output_csv, index=False)
+    if seed_df.empty or "config_name" not in seed_df.columns:
+        empty_df = pd.DataFrame(columns=columns)
+        empty_df.to_csv(output_csv, index=False)
         output_tex.write_text("% No best-seed runs found.\n")
-        return filtered
+        return empty_df
+
+    filtered = seed_df[seed_df["config_name"] == selected_config_name].copy()
+    if filtered.empty:
+        empty_df = pd.DataFrame(columns=columns)
+        empty_df.to_csv(output_csv, index=False)
+        output_tex.write_text("% No best-seed runs found.\n")
+        return empty_df
     filtered[columns].sort_values("seed").to_csv(output_csv, index=False)
 
     lines = [
