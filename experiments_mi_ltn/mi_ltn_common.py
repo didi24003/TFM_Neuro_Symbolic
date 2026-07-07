@@ -87,6 +87,19 @@ def load_eegnet_class():
     return module.EEGNet
 
 
+def load_eegnex_class():
+    """Load EEGNeX from braindecode with an explicit error if unavailable."""
+
+    try:
+        from braindecode.models import EEGNeX
+    except ImportError as exc:
+        raise ImportError(
+            "EEGNeX is not available. Install braindecode in the active environment "
+            "to run EEGNeX experiments."
+        ) from exc
+    return EEGNeX
+
+
 def build_model() -> torch.nn.Module:
     EEGNet = load_eegnet_class()
     return EEGNet(
